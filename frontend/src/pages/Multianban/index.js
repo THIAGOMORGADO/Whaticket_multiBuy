@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import api from "../../services/api";
-import Board from "react-trello";
+import AsyncBoard from "react-trello";
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -43,6 +43,9 @@ const useStyles = makeStyles(theme => ({
     alignItems: "center",
     justifyContent: "space-between",
     padding: theme.spacing(1)
+  },
+  tab: {
+    fontSize: "80%"
   }
 }));
 
@@ -60,13 +63,12 @@ const MultiKanban = () => {
     lanes: [
       {
         id: "lane1",
-        title: "Novo leads",
-        label: "multiBuy",
-        cards: []
+        title: "Novos Leads",
+        label: "(0)",
+         cards: [],
       }
     ]
   });
-
   const fetchTickets = async () => {
     try {
       const { data } = await api.get("/tickets", {});
@@ -87,9 +89,15 @@ const MultiKanban = () => {
           id: ticket.id.toString(),
           title: "Ticket nº " + ticket.id.toString(),
           description: ticket.contact.number + "\n\n" + ticket.lastMessage,
-          label: ticket.contact.name,
-          draggable: true
+          draggable: true,
+          tags: ticket.tags?.map(tag => ({
+            id: tag.id.toString(),
+             bgcolor: tag.color,
+            title: tag.name,
+          }))
         }));
+
+      console.log('esse array e o q ue a gente', cards)
 
       setFile(prevFile => ({
         ...prevFile,
@@ -97,7 +105,8 @@ const MultiKanban = () => {
           if (lane.id === "lane1") {
             return {
               ...lane,
-              cards: cards
+              cards: cards,
+              
             };
           }
           return lane;
@@ -142,27 +151,13 @@ const MultiKanban = () => {
       };
     });
   };
-
-  const handleDragStart = (cardId, laneId) => {
-    console.log("drag started");
-    console.log(`cardId: ${cardId}`);
-    console.log(`laneId: ${laneId}`);
-  };
-
-  const handleDragEnd = (cardId, sourceLaneId, targetLaneId) => {
-    console.log("drag ended");
-    console.log(`cardId: ${cardId}`);
-    console.log(`sourceLaneId: ${sourceLaneId}`);
-    console.log(`targetLaneId: ${targetLaneId}`);
-  };
   return (
     <div className={classes.root}>
-      <Board
+      <AsyncBoard
         data={file}
         {...settings}
-        handleDragStart={handleDragStart}
-        handleDragEnd={handleDragEnd}
         onCardMoveAcrossLanes={handleCardMove}
+        className={classes.tab}
       />
     </div>
   );
