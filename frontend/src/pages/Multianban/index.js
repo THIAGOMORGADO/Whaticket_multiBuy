@@ -59,16 +59,10 @@ const MultiKanban = () => {
     draggable: true
   };
 
-  const [file, setFile] = useState({
-    lanes: [
-      {
-        id: "lane1",
-        title: "Novos Leads",
-        label: "(0)",
-         cards: [],
-      }
-    ]
-  });
+  //AQII COMEÇA O ESTADO INICIAL
+
+  const [file, setFile] = useState(JSON.parse(localStorage.getItem("boardData")));
+
   const fetchTickets = async () => {
     try {
       const { data } = await api.get("/tickets", {});
@@ -92,12 +86,12 @@ const MultiKanban = () => {
           draggable: true,
           tags: ticket.tags?.map(tag => ({
             id: tag.id.toString(),
-             bgcolor: tag.color,
-            title: tag.name,
+            bgcolor: tag.color,
+            title: tag.name
           }))
         }));
 
-      console.log('esse array e o q ue a gente', cards)
+      console.log("esse array e o q ue a gente", cards);
 
       setFile(prevFile => ({
         ...prevFile,
@@ -105,8 +99,7 @@ const MultiKanban = () => {
           if (lane.id === "lane1") {
             return {
               ...lane,
-              cards: cards,
-              
+              cards: cards
             };
           }
           return lane;
@@ -121,6 +114,42 @@ const MultiKanban = () => {
     popularCards();
     // eslint-disable-next-line
   }, []);
+
+  const [boardData, setBoardData] = useState(file);
+
+  useEffect(() => {
+    const loadSavedData = () => {
+      try {
+        const serializedData = localStorage.getItem("boardData");
+        if (serializedData !== null) {
+          const data = JSON.parse(serializedData);
+          setFile(data);
+          console.log("Dados carregados do localStorage com sucesso!");
+        } else {
+          // Se não houver dados salvos no localStorage, usa o objeto padrão
+          setFile(file);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados do localStorage:", error);
+      }
+    };
+
+    loadSavedData();
+  }, []);
+
+  useEffect(() => {
+    const saveDataToLocalStorage = data => {
+      try {
+        const serializedData = JSON.stringify(data);
+        localStorage.setItem("boardData", serializedData);
+        console.log("Dados salvos no localStorage com sucesso!");
+      } catch (error) {
+        console.error("Erro ao salvar dados no localStorage:", error);
+      }
+    };
+
+    saveDataToLocalStorage(file);
+  }, [file]);
 
   const handleCardMove = (cardId, sourceLaneId, targetLaneId) => {
     setFile(prevFile => {
@@ -151,6 +180,7 @@ const MultiKanban = () => {
       };
     });
   };
+
   return (
     <div className={classes.root}>
       <AsyncBoard
