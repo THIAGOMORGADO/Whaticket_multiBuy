@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import api from "../../services/api";
-import AsyncBoard from "react-trello";
+import AsyncBoard, { Lane } from "react-trello";
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -59,23 +59,28 @@ const MultiKanban = () => {
     draggable: true
   };
 
+  const [laneList, setLaneList] = useState({
+    laneListStorage: []
+  });
+
   const [file, setFile] = useState({
     lanes: [
       {
         id: "lane1",
         title: "Novos Leads",
         label: "(0)",
-         cards: [],
+        cards: []
       }
     ]
   });
+
   const fetchTickets = async () => {
     try {
       const { data } = await api.get("/tickets", {});
-      console.log(data.tickets);
+      // console.log(data.tickets);
       return data.tickets;
     } catch (err) {
-      console.log(err);
+      // console.log(err);
       return [];
     }
   };
@@ -92,12 +97,12 @@ const MultiKanban = () => {
           draggable: true,
           tags: ticket.tags?.map(tag => ({
             id: tag.id.toString(),
-             bgcolor: tag.color,
-            title: tag.name,
+            bgcolor: tag.color,
+            title: tag.name
           }))
         }));
 
-      console.log('esse array e o q ue a gente', cards)
+      // console.log("esse array e o que a gente", cards);
 
       setFile(prevFile => ({
         ...prevFile,
@@ -105,8 +110,7 @@ const MultiKanban = () => {
           if (lane.id === "lane1") {
             return {
               ...lane,
-              cards: cards,
-              
+              cards: cards
             };
           }
           return lane;
@@ -119,19 +123,24 @@ const MultiKanban = () => {
 
   useEffect(() => {
     popularCards();
-    // eslint-disable-next-line
   }, []);
 
   const handleCardMove = (cardId, sourceLaneId, targetLaneId) => {
+    console.log("cardId:", cardId);
+    console.log("sourceLaneId:", sourceLaneId);
+    console.log("targetLaneId:", targetLaneId);
+
     setFile(prevFile => {
       const updatedLanes = prevFile.lanes.map(lane => {
         if (lane.id === sourceLaneId) {
+          console.log("Lane.id === sourceLaneId");
           return {
             ...lane,
             cards: lane.cards.filter(card => card.id !== cardId)
           };
         }
         if (lane.id === targetLaneId) {
+          console.log("lane.id === targetLaneId");
           return {
             ...lane,
             cards: [
@@ -151,11 +160,71 @@ const MultiKanban = () => {
       };
     });
   };
+
+  function handleNewLaneAdd(title) {
+    const laneNew = title;
+
+    const laneDate = {
+      id: laneNew.id,
+      title: laneNew.title
+    };
+
+    setFile({
+      lanes: [...file.lanes, laneDate]
+    });
+
+    file.lanes.push(laneDate);
+    if (laneList.laneListStorage.length > 0) {
+      laneList.laneListStorage = [];
+    }
+    file.lanes.map(value => {
+      if (value.id != "lane1") {
+        laneList.laneListStorage.push(value);
+      }
+    });
+    localStorage.setItem("laneDate", JSON.stringify(laneList.laneListStorage));
+
+    console.log(file);
+  }
+
+  async function loadingStorage() {
+    const response = await JSON.parse(localStorage.getItem("laneDate"));
+    console.log("o que rem no resposne", response);
+    if (response) {
+      response.map(value => {
+        if (value && value["id"] && value["title"]) {
+          const newLane = {
+            id: value["id"],
+            title: value["title"],
+            cards: []
+          };
+          setFile(prevFile => ({
+            ...prevFile,
+            lanes: [...prevFile.lanes, newLane]
+          }));
+        }
+      });
+    }
+  }
+
+  useEffect(() => {
+    loadingStorage();
+  }, []);
+  function handleOpenModalCard(cardId, metadata, laneId) {
+    const data = {
+      cardId,
+      metadata,
+      laneId
+    };
+    console.log(data);
+  }
   return (
     <div className={classes.root}>
       <AsyncBoard
         data={file}
         {...settings}
+        onLaneAdd={handleNewLaneAdd}
+        onCardClick={handleOpenModalCard}
         onCardMoveAcrossLanes={handleCardMove}
         className={classes.tab}
       />

@@ -48,6 +48,5 @@ export default function CardCounter(props) {
             />
         </Card>
         : <Skeleton variant="rect" height={80} />
-    )
-    
+    )    
 }
