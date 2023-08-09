@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import Routes from "./routes";
 import "react-toastify/dist/ReactToastify.css";
 
+import GlobalStyle from "./styles/global";
+
 import { createTheme, ThemeProvider } from "@material-ui/core/styles";
 import { ptBR } from "@material-ui/core/locale";
 
@@ -56,10 +58,11 @@ const App = () => {
 	}, []);
 
 	return (
-		<ThemeProvider theme={theme}>
-			<Routes />
-		</ThemeProvider>
-	);
+    <ThemeProvider theme={theme}>
+      <GlobalStyle />
+        <Routes />
+    </ThemeProvider>
+  )
 };
 
 export default App;
