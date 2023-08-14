@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
+
 import api from "../../services/api";
-import AsyncBoard, { Lane } from "react-trello";
+import AsyncBoard from "react-trello";
+import { MdClose } from "react-icons/md";
+import Modal from "react-modal";
+import Skeleton from "@material-ui/lab/Skeleton";
+import Avatar from "@material-ui/core/Avatar";
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -29,7 +34,7 @@ const useStyles = makeStyles(theme => ({
     alignItems: "center",
     justifyContent: "center",
     fontSize: "normal",
-    marginTop: "12px"
+    marginTop: "12%"
   },
   settingOption: {
     marginLeft: "auto"
@@ -58,6 +63,13 @@ const MultiKanban = () => {
     editLaneTitle: true,
     draggable: true
   };
+  const [jsonModalValues, setJsonModalValues] = useState({});
+  const [jsonModalTagsInfo, setJsonModalTagsInfo] = useState({});
+  const [jsonModalExtraInfo, setJsonModalExtraInfo] = useState({});
+  const [fetchData, setFetchData] = useState([]);
+  const [modalIsOpen, setIsOpen] = React.useState(false);
+  const [extraInfoLoading, setExtraInfoLoading] = useState(true);
+  const [fetchExtraInfos, setFetchExtraInfos] = useState([]);
 
   const [laneList, setLaneList] = useState({
     laneListStorage: []
@@ -73,14 +85,11 @@ const MultiKanban = () => {
       }
     ]
   });
-
   const fetchTickets = async () => {
     try {
       const { data } = await api.get("/tickets", {});
-      // console.log(data.tickets);
       return data.tickets;
     } catch (err) {
-      // console.log(err);
       return [];
     }
   };
@@ -88,12 +97,13 @@ const MultiKanban = () => {
   const popularCards = async () => {
     try {
       const tickets = await fetchTickets();
+      setFetchData(tickets);
       const cards = tickets
         .filter(ticket => ticket.status === "open")
         .map(ticket => ({
           id: ticket.id.toString(),
           title: "Ticket nº " + ticket.id.toString(),
-          description: ticket.contact.number + "\n\n" + ticket.lastMessage,
+          description: ticket.contact.number,
           draggable: true,
           tags: ticket.tags?.map(tag => ({
             id: tag.id.toString(),
@@ -101,9 +111,6 @@ const MultiKanban = () => {
             title: tag.name
           }))
         }));
-
-      // console.log("esse array e o que a gente", cards);
-
       setFile(prevFile => ({
         ...prevFile,
         lanes: prevFile.lanes.map(lane => {
@@ -123,6 +130,8 @@ const MultiKanban = () => {
 
   useEffect(() => {
     popularCards();
+
+    loadingStorage();
   }, []);
 
   const handleCardMove = (cardId, sourceLaneId, targetLaneId) => {
@@ -189,7 +198,6 @@ const MultiKanban = () => {
 
   async function loadingStorage() {
     const response = await JSON.parse(localStorage.getItem("laneDate"));
-    console.log("o que rem no resposne", response);
     if (response) {
       response.map(value => {
         if (value && value["id"] && value["title"]) {
@@ -207,29 +215,138 @@ const MultiKanban = () => {
     }
   }
 
-  useEffect(() => {
-    loadingStorage();
-  }, []);
-  function handleOpenModalCard(cardId, metadata, laneId) {
-    const data = {
-      cardId,
-      metadata,
-      laneId
-    };
-    console.log(data);
+  async function openModal(cardId) {
+    setIsOpen(true);
+    console.log(cardId);
+    const data = fetchData.find(value => value["id"] == cardId);
+    setJsonModalValues(data["contact"]);
+    setJsonModalTagsInfo(data["tags"]);
+    setJsonModalExtraInfo(data["contact"]);
+    setJsonModalTagsInfo(data["tags"]);
+    const response = await api.get(`/contacts/${cardId}`);
+    setFetchExtraInfos(response.data.extraInfo);
   }
+
+  function closeModal() {
+    setIsOpen(false);
+  }
+  function handleRemoveLane(laneId) {
+    const laneDate = JSON.parse(localStorage.getItem("laneDate"));
+    console.log(laneDate);
+    const laneFiltered = laneDate.filter(lane => lane.id !== laneId);
+    localStorage.setItem("laneDate", JSON.stringify(laneFiltered));
+  }
+
   return (
     <div className={classes.root}>
       <AsyncBoard
         data={file}
         {...settings}
         onLaneAdd={handleNewLaneAdd}
-        onCardClick={handleOpenModalCard}
+        onCardClick={openModal}
         onCardMoveAcrossLanes={handleCardMove}
+        onLaneDelete={handleRemoveLane}
         className={classes.tab}
       />
+      <Modal
+        isOpen={modalIsOpen}
+        style={customStyles}
+        onRequestClose={closeModal}
+      >
+        <div style={customStyles.modalHeader}>
+          <h2>Detalhes do cardId {jsonModalExtraInfo["name"]}</h2>
+          <button
+            onClick={closeModal}
+            style={{ border: "none", background: "none" }}
+          >
+            <MdClose size={24} color="#ff0000" style={{ fontWeight: "bold" }} />
+          </button>
+        </div>
+
+        <div style={customStyles.contactArea}>
+          <Avatar
+            src={jsonModalValues["profilePicUrl"]}
+            alt="logo"
+            style={customStyles.logo}
+            className={classes.large}
+          />
+          <div style={customStyles.warpper}>
+            <h3>Nome : {jsonModalValues["name"]}</h3>
+            <p>email: {jsonModalValues["email"]}</p>
+            <div>Tags: {jsonModalTagsInfo["name"]}</div>
+          </div>
+        </div>
+        <div style={customStyles.otherInfos}>
+          <h4>Informacoes do usuario</h4>
+
+          {fetchExtraInfos && extraInfoLoading ? (
+            fetchExtraInfos.map(v => (
+              <div key={v.id}>
+                <div style={customStyles.listArea}>
+                  <span>{v.name}</span> <span> {v.value}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <Skeleton
+              sx={{ bgcolor: "grey.900" }}
+              variant={"rectangular"}
+              width="100%"
+              height={60}
+            />
+          )}
+        </div>
+      </Modal>
     </div>
   );
+};
+
+export const customStyles = {
+  content: {
+    width: "35%",
+    height: "50%",
+    borderRadius: "5px",
+    top: "50%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)"
+  },
+  contactArea: {
+    marginTop: "5%",
+    display: "flex",
+    marginLeft: "10%",
+    alignItems: "center"
+  },
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between"
+  },
+  logo: {
+    width: "10%",
+    height: "10%",
+    borderRadius: "50%"
+  },
+  warpper: {
+    marginLeft: "5%"
+  },
+  otherInfos: {
+    marginTop: "5%"
+  },
+  footer: {
+    background: "red",
+    display: "flex",
+    width: "100%",
+    flexDirection: "row"
+  },
+  extraInfoLoading: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: "10%",
+    color: "#ddd"
+  }
 };
 
 export default MultiKanban;
