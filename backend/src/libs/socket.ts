@@ -1,3 +1,4 @@
+import { messages } from "./../controllers/ChatController";
 import { Server as SocketIO } from "socket.io";
 import { Server } from "http";
 import AppError from "../errors/AppError";
@@ -37,7 +38,7 @@ export const initIO = (httpServer: Server): SocketIO => {
 
     socket.on("joinTickets", (status: string) => {
       logger.info(`A client joined to ${status} tickets channel.`);
-      socket.join(status);
+      socket.emit(status);
     });
   });
   return io;

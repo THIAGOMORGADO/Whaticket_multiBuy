@@ -122,6 +122,7 @@ const Ticket = () => {
           }
           return prevState;
         });
+        console.log(data.action);
         console.log("eSTA AQUI O CONTATOS....->", data);
       }
     });
