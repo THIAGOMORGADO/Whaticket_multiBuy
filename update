@@ -13,5 +13,5 @@ npm install
 rm -rf build
 npm run build
 pm2 restart all
-
+ 
 echo "Update finished. Enjoy!"

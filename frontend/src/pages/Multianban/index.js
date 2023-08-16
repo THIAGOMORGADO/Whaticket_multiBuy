@@ -1,22 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
+import Modal from "react-modal";
 
 import api from "../../services/api";
 import AsyncBoard from "react-trello";
 import { MdClose } from "react-icons/md";
-import Modal from "react-modal";
+
 import Skeleton from "@material-ui/lab/Skeleton";
 import Avatar from "@material-ui/core/Avatar";
+
+import "./responsive.css";
 
 const useStyles = makeStyles(theme => ({
   root: {
     display: "flex",
-    flexDirection: "row",
-    alignItems: "start",
-    padding: theme.spacing(1),
-    backgroundColor: "#3179ba"
+    flexDirection: "column", // Alterado para coluna em telas menores
+    alignItems: "center", // Centralizar elementos horizontalmente
+    backgroundColor: "#3179ba",
+    padding: theme.spacing(1)
   },
-
   paper: {
     padding: theme.spacing(2),
     display: "flex",
@@ -132,7 +134,7 @@ const MultiKanban = () => {
     popularCards();
 
     loadingStorage();
-  }, []);
+  }, [popularCards]);
 
   const handleCardMove = (cardId, sourceLaneId, targetLaneId) => {
     console.log("cardId:", cardId);
@@ -248,62 +250,130 @@ const MultiKanban = () => {
         onLaneDelete={handleRemoveLane}
         className={classes.tab}
       />
-      <Modal
-        isOpen={modalIsOpen}
-        style={customStyles}
-        onRequestClose={closeModal}
-      >
-        <div style={customStyles.modalHeader}>
-          <h2>Detalhes do cardId {jsonModalExtraInfo["name"]}</h2>
-          <button
-            onClick={closeModal}
-            style={{ border: "none", background: "none" }}
-          >
-            <MdClose size={24} color="#ff0000" style={{ fontWeight: "bold" }} />
-          </button>
-        </div>
-
-        <div style={customStyles.contactArea}>
-          <Avatar
-            src={jsonModalValues["profilePicUrl"]}
-            alt="logo"
-            style={customStyles.logo}
-            className={classes.large}
-          />
-          <div style={customStyles.warpper}>
-            <h3>Nome : {jsonModalValues["name"]}</h3>
-            <p>email: {jsonModalValues["email"]}</p>
-            <div>Tags: {jsonModalTagsInfo["name"]}</div>
+      <div className={customStyles.mobile}>
+        <Modal
+          isOpen={modalIsOpen}
+          style={customStyles}
+          onRequestClose={closeModal}
+        >
+          <div style={customStyles.modalHeader}>
+            <h2>Detalhes do cardId {jsonModalExtraInfo["name"]}</h2>
+            <button
+              onClick={closeModal}
+              style={{ border: "none", background: "none" }}
+            >
+              <MdClose
+                size={24}
+                color="#ff0000"
+                style={{ fontWeight: "bold" }}
+              />
+            </button>
           </div>
-        </div>
-        <div style={customStyles.otherInfos}>
-          <h4>Informacoes do usuario</h4>
 
-          {fetchExtraInfos && extraInfoLoading ? (
-            fetchExtraInfos.map(v => (
-              <div key={v.id}>
-                <div style={customStyles.listArea}>
-                  <span>{v.name}</span> <span> {v.value}</span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <Skeleton
-              sx={{ bgcolor: "grey.900" }}
-              variant={"rectangular"}
-              width="100%"
-              height={60}
+          <div style={customStyles.contactArea}>
+            <Avatar
+              src={jsonModalValues["profilePicUrl"]}
+              alt="logo"
+              style={customStyles.logo}
+              className={classes.large}
             />
-          )}
-        </div>
-      </Modal>
+            <div style={customStyles.warpper}>
+              <h3>Nome : {jsonModalValues["name"]}</h3>
+              <p>email: {jsonModalValues["email"]}</p>
+              <div>Tags: {jsonModalTagsInfo["name"]}</div>
+            </div>
+          </div>
+          <div style={customStyles.otherInfos}>
+            <h4>Informacoes do usuario</h4>
+
+            {fetchExtraInfos && extraInfoLoading ? (
+              fetchExtraInfos.map(v => (
+                <div key={v.id}>
+                  <div style={customStyles.listArea}>
+                    <span>{v.name}</span> <span> {v.value}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <Skeleton
+                sx={{ bgcolor: "grey.900" }}
+                variant={"rectangular"}
+                width="100%"
+                height={60}
+              />
+            )}
+          </div>
+        </Modal>
+      </div>
     </div>
   );
 };
 
-export const customStyles = {
+export const customStylesMobile = {
+  mobile: {
+    width: "100%",
+    maxWidth: "400px" // Corrigido o nome da propriedade (maxWidth em vez de maxWidht)
+  },
+
   content: {
-    width: "35%",
+    width: "50%",
+    minWidth: "50px",
+    maxWidth: "600px", // Ajuste a largura máxima da modal conforme necessário
+    height: "auto", // Definido como "auto" para se ajustar ao conteúdo
+    borderRadius: "5px",
+    top: "50%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)"
+  },
+
+  contactArea: {
+    maxWidht: "100%",
+    marginTop: "5%",
+    display: "flex",
+    marginLeft: "10%",
+    alignItems: "center"
+  },
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between"
+  },
+  logo: {
+    width: "10%",
+    height: "10%",
+    borderRadius: "50%"
+  },
+  warpper: {
+    marginLeft: "5%"
+  },
+  otherInfos: {
+    marginTop: "5%"
+  },
+  footer: {
+    background: "red",
+    display: "flex",
+    width: "100%",
+    flexDirection: "row"
+  },
+  extraInfoLoading: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: "10%",
+    color: "#ddd"
+  }
+};
+
+export const customStyles = {
+  mobile: {
+    width: "100%",
+    maxWidht: "400px"
+  },
+  content: {
+    width: "80%",
+    minWidth: "50px",
     height: "50%",
     borderRadius: "5px",
     top: "50%",
@@ -314,6 +384,7 @@ export const customStyles = {
     transform: "translate(-50%, -50%)"
   },
   contactArea: {
+    maxWidht: "100%",
     marginTop: "5%",
     display: "flex",
     marginLeft: "10%",
