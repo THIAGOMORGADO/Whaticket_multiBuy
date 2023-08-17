@@ -14,7 +14,7 @@ import "./responsive.css";
 const useStyles = makeStyles(theme => ({
   root: {
     display: "flex",
-    flexDirection: "column", // Alterado para coluna em telas menores
+    flexDirection: "row", // Alterado para coluna em telas menores
     alignItems: "center", // Centralizar elementos horizontalmente
     backgroundColor: "#3179ba",
     padding: theme.spacing(1)
@@ -66,7 +66,7 @@ const MultiKanban = () => {
     draggable: true
   };
   const [jsonModalValues, setJsonModalValues] = useState({});
-  const [jsonModalTagsInfo, setJsonModalTagsInfo] = useState({});
+  const [jsonModalTagsInfo, setJsonModalTagsInfo] = useState([]);
   const [jsonModalExtraInfo, setJsonModalExtraInfo] = useState({});
   const [fetchData, setFetchData] = useState([]);
   const [modalIsOpen, setIsOpen] = React.useState(false);
@@ -87,6 +87,7 @@ const MultiKanban = () => {
       }
     ]
   });
+
   const fetchTickets = async () => {
     try {
       const { data } = await api.get("/tickets", {});
@@ -99,20 +100,23 @@ const MultiKanban = () => {
   const popularCards = async () => {
     try {
       const tickets = await fetchTickets();
+      console.log(tickets);
       setFetchData(tickets);
       const cards = tickets
         .filter(ticket => ticket.status === "open")
         .map(ticket => ({
           id: ticket.id.toString(),
-          title: "Ticket nº " + ticket.id.toString(),
-          description: ticket.contact.number,
+          title: ticket.contact.name,
+          description: ticket.contact.name,
           draggable: true,
+          img: ticket.contact.profilePicUrl,
           tags: ticket.tags?.map(tag => ({
             id: tag.id.toString(),
             bgcolor: tag.color,
             title: tag.name
           }))
         }));
+        
       setFile(prevFile => ({
         ...prevFile,
         lanes: prevFile.lanes.map(lane => {
@@ -122,6 +126,7 @@ const MultiKanban = () => {
               cards: cards
             };
           }
+         
           return lane;
         })
       }));
@@ -134,7 +139,7 @@ const MultiKanban = () => {
     popularCards();
 
     loadingStorage();
-  }, [popularCards]);
+  }, []);
 
   const handleCardMove = (cardId, sourceLaneId, targetLaneId) => {
     console.log("cardId:", cardId);
@@ -221,10 +226,12 @@ const MultiKanban = () => {
     setIsOpen(true);
     console.log(cardId);
     const data = fetchData.find(value => value["id"] == cardId);
+    const tags = fetchData.find(item => item.id === cardId);
+    setJsonModalTagsInfo(tags); // Que esta retornando aqui
     setJsonModalValues(data["contact"]);
-    setJsonModalTagsInfo(data["tags"]);
     setJsonModalExtraInfo(data["contact"]);
     setJsonModalTagsInfo(data["tags"]);
+
     const response = await api.get(`/contacts/${cardId}`);
     setFetchExtraInfos(response.data.extraInfo);
   }
@@ -257,7 +264,7 @@ const MultiKanban = () => {
           onRequestClose={closeModal}
         >
           <div style={customStyles.modalHeader}>
-            <h2>Detalhes do cardId {jsonModalExtraInfo["name"]}</h2>
+            <h2>Detalhes. {jsonModalExtraInfo["name"]}</h2>
             <button
               onClick={closeModal}
               style={{ border: "none", background: "none" }}
@@ -280,7 +287,13 @@ const MultiKanban = () => {
             <div style={customStyles.warpper}>
               <h3>Nome : {jsonModalValues["name"]}</h3>
               <p>email: {jsonModalValues["email"]}</p>
-              <div>Tags: {jsonModalTagsInfo["name"]}</div>
+              {jsonModalTagsInfo.map(item => (
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <p style={{ background: `${item.color}`, color: "#fff" }}>
+                    Tags: {item.name}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
           <div style={customStyles.otherInfos}>
@@ -309,114 +322,45 @@ const MultiKanban = () => {
   );
 };
 
-export const customStylesMobile = {
-  mobile: {
-    width: "100%",
-    maxWidth: "400px" // Corrigido o nome da propriedade (maxWidth em vez de maxWidht)
-  },
-
+const customStyles = {
   content: {
-    width: "50%",
-    minWidth: "50px",
-    maxWidth: "600px", // Ajuste a largura máxima da modal conforme necessário
-    height: "auto", // Definido como "auto" para se ajustar ao conteúdo
-    borderRadius: "5px",
+    with: "80vw",
     top: "50%",
     left: "50%",
     right: "auto",
     bottom: "auto",
     marginRight: "-50%",
-    transform: "translate(-50%, -50%)"
-  },
-
-  contactArea: {
-    maxWidht: "100%",
-    marginTop: "5%",
+    transform: "translate(-50%, -50%)",
     display: "flex",
-    marginLeft: "10%",
+    flexDirection: "column",
     alignItems: "center"
   },
   modalHeader: {
-    display: "flex",
-    justifyContent: "space-between"
-  },
-  logo: {
-    width: "10%",
-    height: "10%",
-    borderRadius: "50%"
-  },
-  warpper: {
-    marginLeft: "5%"
-  },
-  otherInfos: {
-    marginTop: "5%"
-  },
-  footer: {
-    background: "red",
-    display: "flex",
     width: "100%",
-    flexDirection: "row"
-  },
-  extraInfoLoading: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-    marginTop: "10%",
-    color: "#ddd"
-  }
-};
-
-export const customStyles = {
-  mobile: {
-    width: "100%",
-    maxWidht: "400px"
-  },
-  content: {
-    width: "80%",
-    minWidth: "50px",
-    height: "50%",
-    borderRadius: "5px",
-    top: "50%",
-    left: "50%",
-    right: "auto",
-    bottom: "auto",
-    marginRight: "-50%",
-    transform: "translate(-50%, -50%)"
+    justifyContent: "space-between",
+    flexDirection: "row"
   },
   contactArea: {
-    maxWidht: "100%",
-    marginTop: "5%",
     display: "flex",
-    marginLeft: "10%",
-    alignItems: "center"
-  },
-  modalHeader: {
-    display: "flex",
-    justifyContent: "space-between"
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: "1rem",
+    alignItems: "center",
+    marginTop: "10px",
+    marginBottom: "10px"
   },
   logo: {
-    width: "10%",
-    height: "10%",
-    borderRadius: "50%"
+    width: "30%",
+    height: "30%"
   },
-  warpper: {
-    marginLeft: "5%"
+  apiColor: {
+    backgroundColor: "item.color"
   },
   otherInfos: {
-    marginTop: "5%"
-  },
-  footer: {
-    background: "red",
     display: "flex",
-    width: "100%",
-    flexDirection: "row"
-  },
-  extraInfoLoading: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: "10%",
-    color: "#ddd"
+    flexDirection: "column"
   }
 };
 
