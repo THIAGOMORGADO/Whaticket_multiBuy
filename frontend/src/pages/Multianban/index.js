@@ -72,7 +72,7 @@ const MultiKanban = () => {
   const [modalIsOpen, setIsOpen] = React.useState(false);
   const [extraInfoLoading, setExtraInfoLoading] = useState(true);
   const [fetchExtraInfos, setFetchExtraInfos] = useState([]);
-
+  const [profilePicUrlImg, setprofilePicUrlImg] = useState([]);
   const [laneList, setLaneList] = useState({
     laneListStorage: []
   });
@@ -83,6 +83,7 @@ const MultiKanban = () => {
         id: "lane1",
         title: "Novos Leads",
         label: "(0)",
+
         cards: []
       }
     ]
@@ -96,27 +97,44 @@ const MultiKanban = () => {
       return [];
     }
   };
+  const saveBoardDataToLocalStorage = newData => {
+    localStorage.setItem("laneDate", JSON.stringify(newData));
+  };
 
   const popularCards = async () => {
+    const response = await api.get(`/tickets`);
+    const img = fetchData.map(data => {
+      console.log(data);
+    });
+    console.log("Aqui e response ", JSON.stringify(img));
     try {
       const tickets = await fetchTickets();
       console.log(tickets);
+
       setFetchData(tickets);
+
       const cards = tickets
         .filter(ticket => ticket.status === "open")
         .map(ticket => ({
           id: ticket.id.toString(),
           title: ticket.contact.name,
+
+          description: ticket.contact.number,
+          draggable: true,
+          avatar: "passa a imagem aqui",
+
           description: ticket.contact.name,
           draggable: true,
           img: ticket.contact.profilePicUrl,
+
           tags: ticket.tags?.map(tag => ({
             id: tag.id.toString(),
             bgcolor: tag.color,
             title: tag.name
           }))
         }));
-        
+
+
       setFile(prevFile => ({
         ...prevFile,
         lanes: prevFile.lanes.map(lane => {
@@ -126,10 +144,14 @@ const MultiKanban = () => {
               cards: cards
             };
           }
-         
+
+          console.log(tickets);
+
+
           return lane;
         })
       }));
+      console.log(cards);
     } catch (err) {
       console.log(err);
     }
@@ -137,6 +159,19 @@ const MultiKanban = () => {
 
   useEffect(() => {
     popularCards();
+    getCardList();
+    const savedData = localStorage.getItem("laneDate");
+    if (savedData) {
+      setFile(JSON.parse(savedData));
+    }
+  }, []);
+
+
+  const handleCardMove = async (cardId, sourceLaneId, targetLaneId) => {
+    const updatedData = { ...file };
+    const sourceLane = updatedData.lanes.find(lane => lane.id === sourceLaneId);
+    const targetLane = updatedData.lanes.find(lane => lane.id === targetLaneId);
+    const movedCard = sourceLane.cards.find(card => card.id === cardId);
 
     loadingStorage();
   }, []);
@@ -170,56 +205,28 @@ const MultiKanban = () => {
         return lane;
       });
 
-      return {
-        ...prevFile,
-        lanes: updatedLanes
-      };
-    });
+
+    if (movedCard) {
+      sourceLane.cards = sourceLane.cards.filter(card => card.id !== cardId);
+      targetLane.cards.splice(position, 0, { ...movedCard });
+      setFile(updatedData);
+      localStorage.setItem("laneDate", JSON.stringify(laneFiltered));
+    }
   };
 
+  function getCardList() {
+    JSON.parse(localStorage.getItem("moveCard"));
+  }
   function handleNewLaneAdd(title) {
     const laneNew = title;
-
-    const laneDate = {
-      id: laneNew.id,
-      title: laneNew.title
+    const updatedData = { ...file };
+    const newLane = {
+      id: Date.now().toString(),
+      title: laneNew.title,
+      cards: []
     };
-
-    setFile({
-      lanes: [...file.lanes, laneDate]
-    });
-
-    file.lanes.push(laneDate);
-    if (laneList.laneListStorage.length > 0) {
-      laneList.laneListStorage = [];
-    }
-    file.lanes.map(value => {
-      if (value.id != "lane1") {
-        laneList.laneListStorage.push(value);
-      }
-    });
-    localStorage.setItem("laneDate", JSON.stringify(laneList.laneListStorage));
-
-    console.log(file);
-  }
-
-  async function loadingStorage() {
-    const response = await JSON.parse(localStorage.getItem("laneDate"));
-    if (response) {
-      response.map(value => {
-        if (value && value["id"] && value["title"]) {
-          const newLane = {
-            id: value["id"],
-            title: value["title"],
-            cards: []
-          };
-          setFile(prevFile => ({
-            ...prevFile,
-            lanes: [...prevFile.lanes, newLane]
-          }));
-        }
-      });
-    }
+    updatedData.lanes.push(newLane);
+    setFile(updatedData);
   }
 
   async function openModal(cardId) {
@@ -255,6 +262,7 @@ const MultiKanban = () => {
         onCardClick={openModal}
         onCardMoveAcrossLanes={handleCardMove}
         onLaneDelete={handleRemoveLane}
+        onDataChange={saveBoardDataToLocalStorage}
         className={classes.tab}
       />
       <div className={customStyles.mobile}>
@@ -303,7 +311,7 @@ const MultiKanban = () => {
               fetchExtraInfos.map(v => (
                 <div key={v.id}>
                   <div style={customStyles.listArea}>
-                    <span>{v.name}</span> <span> {v.value}</span>
+                    <span>{v.name}</span> : <span> {v.value}</span>
                   </div>
                 </div>
               ))
@@ -354,9 +362,12 @@ const customStyles = {
   logo: {
     width: "30%",
     height: "30%"
+
+
   },
   apiColor: {
     backgroundColor: "item.color"
+
   },
   otherInfos: {
     display: "flex",

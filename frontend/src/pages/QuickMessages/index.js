@@ -35,8 +35,10 @@ function QuickMessages(props) {
   const {
     list: listMessages,
     save: saveMessage,
+    upload: uploadAttachment,
     update: updateMessage,
-    deleteRecord: deleteMessage
+    deleteRecord: deleteMessage,
+    uploadDelete
   } = useQuickMessages();
 
   const { user } = useContext(AuthContext);
@@ -75,10 +77,11 @@ function QuickMessages(props) {
     setMessageSelected({ id: null, message: "", shortcode: "" });
   };
 
-  const handleSave = async message => {
+  const handleSave = async (message, attachment) => {
     handleCloseModal();
     try {
-      await saveMessage(message);
+      const { id } = await saveMessage(message);
+      await uploadAttachment(id, attachment);
       await loadingQuickMessages();
       toast.success("Messagem adicionada com sucesso.");
     } catch (e) {
@@ -86,10 +89,16 @@ function QuickMessages(props) {
     }
   };
 
-  const handleEdit = async message => {
+  const handleEdit = async (message, attachment) => {
     handleCloseModal();
     try {
-      await updateMessage(message);
+      const { id, mediaPath } = await updateMessage(message);
+      if (mediaPath && !attachment) {
+        await uploadDelete(id);
+      }
+      if (!mediaPath && attachment) {
+        await uploadAttachment(id, attachment);
+      }
       await loadingQuickMessages();
       toast.success("Messagem atualizada com sucesso.");
     } catch (e) {
@@ -103,6 +112,15 @@ function QuickMessages(props) {
       await deleteMessage(message.id);
       await loadingQuickMessages();
       toast.success("Messagem excluída com sucesso.");
+    } catch (e) {
+      toast.error(e);
+    }
+  };
+
+  const handleMediaDeletion = async messageId => {
+    try {
+      await uploadDelete(messageId);
+      await loadingQuickMessages();
     } catch (e) {
       toast.error(e);
     }
@@ -136,6 +154,7 @@ function QuickMessages(props) {
         onClose={handleCloseModal}
         editMessage={handleEdit}
         saveMessage={handleSave}
+        mediaDelete={handleMediaDeletion}
       />
       <ConfirmationModal
         title="Excluir Registro"
