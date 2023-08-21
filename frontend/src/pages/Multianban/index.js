@@ -118,15 +118,22 @@ const MultiKanban = () => {
         .map(ticket => ({
           id: ticket.id.toString(),
           title: ticket.contact.name,
+
           description: ticket.contact.number,
           draggable: true,
           avatar: "passa a imagem aqui",
+
+          description: ticket.contact.name,
+          draggable: true,
+          img: ticket.contact.profilePicUrl,
+
           tags: ticket.tags?.map(tag => ({
             id: tag.id.toString(),
             bgcolor: tag.color,
             title: tag.name
           }))
         }));
+
 
       setFile(prevFile => ({
         ...prevFile,
@@ -137,7 +144,10 @@ const MultiKanban = () => {
               cards: cards
             };
           }
+
           console.log(tickets);
+
+
           return lane;
         })
       }));
@@ -156,11 +166,45 @@ const MultiKanban = () => {
     }
   }, []);
 
+
   const handleCardMove = async (cardId, sourceLaneId, targetLaneId) => {
     const updatedData = { ...file };
     const sourceLane = updatedData.lanes.find(lane => lane.id === sourceLaneId);
     const targetLane = updatedData.lanes.find(lane => lane.id === targetLaneId);
     const movedCard = sourceLane.cards.find(card => card.id === cardId);
+
+    loadingStorage();
+  }, []);
+
+  const handleCardMove = (cardId, sourceLaneId, targetLaneId) => {
+    console.log("cardId:", cardId);
+    console.log("sourceLaneId:", sourceLaneId);
+    console.log("targetLaneId:", targetLaneId);
+
+    setFile(prevFile => {
+      const updatedLanes = prevFile.lanes.map(lane => {
+        if (lane.id === sourceLaneId) {
+          console.log("Lane.id === sourceLaneId");
+          return {
+            ...lane,
+            cards: lane.cards.filter(card => card.id !== cardId)
+          };
+        }
+        if (lane.id === targetLaneId) {
+          console.log("lane.id === targetLaneId");
+          return {
+            ...lane,
+            cards: [
+              ...lane.cards,
+              prevFile.lanes
+                .find(l => l.id === sourceLaneId)
+                .cards.find(c => c.id === cardId)
+            ]
+          };
+        }
+        return lane;
+      });
+
 
     if (movedCard) {
       sourceLane.cards = sourceLane.cards.filter(card => card.id !== cardId);
@@ -318,6 +362,12 @@ const customStyles = {
   logo: {
     width: "30%",
     height: "30%"
+
+
+  },
+  apiColor: {
+    backgroundColor: "item.color"
+
   },
   otherInfos: {
     display: "flex",

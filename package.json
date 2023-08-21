@@ -4,6 +4,7 @@
     "bootstrap": "^5.3.1",
     "firebase": "^10.2.0",
     "react-bootstrap": "^2.8.0",
+    "react-responsive-modal": "^6.4.2",
     "toast": "^0.5.4"
   }
 }
